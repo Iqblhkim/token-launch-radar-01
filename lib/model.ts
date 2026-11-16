@@ -112,6 +112,7 @@ export interface BoardRow {
     growth_multiplier: number;
     maturity_multiplier: number;
     breadth_multiplier: number;
+    dominant_factor_share: number | null;
     chains: number;
     age_days: number | null;
   };
@@ -134,6 +135,7 @@ export interface RadarRow {
   growth_multiplier: number;
   maturity_multiplier: number;
   breadth_multiplier: number;
+  dominant_factor_share: number | null;
 }
 
 /** A live-token protocol: it already trades, so the board shows the market's own value, not a model's. */
@@ -159,6 +161,8 @@ export interface RadarData {
   early_size: number;
   live_size: number;
   total_implied_usd: number;
+  median_dominant_factor_share: number | null;
+  single_factor_rows: number;
   watchlist_slugs: string[];
   rows: RadarRow[];
   live: LiveRow[];
@@ -207,6 +211,23 @@ export function impliedValue(
   const base = protocol.tvl_usd * model.base_multiple;
   const implied = Math.max(1, Math.round(base * growthMult * maturityMult * breadthMult));
   return { implied, growthPct, growthMult, maturityMult, breadthMult, age };
+}
+
+/**
+ * The share of a row's whole model adjustment carried by its single largest factor.
+ * Each multiplier is read on a log scale, so a 1.6x growth lift and a 0.6x maturity
+ * discount count by the size of their move, not their direction: the share is the
+ * biggest absolute log move over the sum of all three. A row near 1.0 rests on one
+ * leg — one strong week, one old listing, or one extra chain — while a row near
+ * one third is pulled about equally by growth, maturity and breadth. Null when the
+ * three multipliers are all exactly 1, so there is no adjustment to carry.
+ */
+export function dominantFactorShare(growthMult: number, maturityMult: number, breadthMult: number): number | null {
+  const moves = [growthMult, maturityMult, breadthMult].map((m) => Math.abs(Math.log(m)));
+  const total = moves[0]! + moves[1]! + moves[2]!;
+  if (total <= 0) return null;
+  const biggest = Math.max(moves[0]!, moves[1]!, moves[2]!);
+  return Math.round((biggest / total) * 1e4) / 1e4;
 }
 
 /** DefiLlama's version-marker rule: a name ending in a release is a pool of another protocol. */
@@ -299,6 +320,7 @@ export function buildBoard(snapshot: Snapshot, model: ModelConstants = MODEL): B
       growth_multiplier: round4(s.growthMult),
       maturity_multiplier: round4(s.maturityMult),
       breadth_multiplier: round4(s.breadthMult),
+      dominant_factor_share: dominantFactorShare(s.growthMult, s.maturityMult, s.breadthMult),
       chains: s.p.chains.length,
       age_days: s.age,
     },
@@ -307,6 +329,13 @@ export function buildBoard(snapshot: Snapshot, model: ModelConstants = MODEL): B
 }
 
 const round4 = (n: number): number => Math.round(n * 1e4) / 1e4;
+
+/** The median of a list already sorted ascending, or null when it is empty. */
+function medianOf(values: number[]): number | null {
+  if (values.length === 0) return null;
+  const mid = Math.floor(values.length / 2);
+  return values.length % 2 === 1 ? values[mid]! : (values[mid - 1]! + values[mid]!) / 2;
+}
 
 /** A step as one string: its action, then its cost and time, within the gate's 20..600 characters. */
 export function stepText(step: FarmStep): string {
@@ -472,6 +501,7 @@ export function radarRow(row: BoardRow): RadarRow {
     growth_multiplier: row.model.growth_multiplier,
     maturity_multiplier: row.model.maturity_multiplier,
     breadth_multiplier: row.model.breadth_multiplier,
+    dominant_factor_share: row.model.dominant_factor_share,
   };
 }
 
@@ -481,6 +511,10 @@ export function buildRadar(snapshot: Snapshot, model: ModelConstants = MODEL): {
   const live = liveRows(snapshot);
   const early = board.filter((r) => !snapshot.watchlist.includes(r.slug)).length;
   const total = board.reduce((n, r) => n + r.implied_value_usd, 0);
+  const shares = board
+    .map((r) => r.model.dominant_factor_share)
+    .filter((v): v is number => v !== null)
+    .sort((a, b) => a - b);
   const radar: RadarData = {
     as_of: snapshot.as_of,
     source: snapshot.source,
@@ -492,6 +526,8 @@ export function buildRadar(snapshot: Snapshot, model: ModelConstants = MODEL): {
     early_size: early,
     live_size: live.length,
     total_implied_usd: total,
+    median_dominant_factor_share: medianOf(shares),
+    single_factor_rows: shares.filter((v) => v >= 0.8).length,
     watchlist_slugs: snapshot.watchlist,
     rows: board.map(radarRow),
     live,
