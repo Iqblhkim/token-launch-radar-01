@@ -42,3 +42,49 @@ Authorship: `main.ts`, `lib/model.ts` and all three `dashboard/` files were **wr
 2. README already carries the three live badges (competition, rank, reward) with owner/repo filled in — verify no `{owner}` placeholder remains.
 3. Bundle this session (and its parent session if it worked on the entry) with the kit CLI, `--muse-usage` for the Muse usage rows, then `node cli/makefun.mjs check --kit <kit> --repo <repo> --transcripts transcripts.tar.gz`.
 4. Submit: `node cli/makefun.mjs submit --competition token-radar-01 --repo-url https://github.com/Iqblhkim/token-launch-radar-01 --commit <sha> --title "Token Radar" --bundle transcripts.tar.gz --keypair <dedicated wallet keypair>`. Max 5 submissions/UTC day, 10 total; last before the deadline is final. **Do not claim any prize without the user's permission.**
+
+## Sensitivity and single-factor read
+
+The board's head is steady while its middle moves. Rebuilding the board eight times,
+once per changed constant, keeps the top row in place every time: Steakhouse Financial
+stays first under every perturbation tried, and nine or ten of the top ten stay in the
+top ten. The churn sits below the head: when growth weight, breadth or the maturity
+window moves, 79 to 124 of the 178 rows change rank, so a rank in the middle of the
+board is a rough neighbourhood, not a precise slot, and a farmer should read the row's
+own figures rather than its exact rank.
+
+The base multiple only scales: 0.20 takes the board total down 20.0% and 0.30 takes it
+up 20.0%, with zero rows moving, because every row is multiplied by the same number.
+Growth weight is the gentlest lever tried: 0.35 lifts the total 0.4% and 0.65 lowers it
+0.4%, with nine and ten of the top ten surviving. Breadth per chain moves more of the
+board than growth weight does: 0.02 drops the total 5.5% and moves 124 rows, 0.06 lifts
+it 5.5% and moves 109. The maturity window moves the total most after the base
+multiple: 730 days lifts it 10.9% with 115 rows moving, 1460 days drops it 5.8% with
+112 moving. The lesson for the model is that the head of the board is not a knife-edge
+choice of constants, but the total implied value is: it leans on the base multiple and
+on how fast age stops mattering.
+
+The dominant factor share says how much of a row's adjustment one factor carries.
+Across the 178 rows the median share is 0.837, the 10th percentile 0.506 and the 90th
+0.998; 106 rows sit at 0.80 or above and 67 at 0.90 or above. Of the 106 single-factor
+rows, 97 are carried by maturity, 8 by growth and 1 by breadth: for most rows the
+biggest move the model makes is the age discount, because a protocol listed long ago
+with no token and one chain has its growth and breadth multipliers sitting at exactly
+1. Five rows sit at a share of 1.000 — Lofty (rank 22), Flux Finance (40), marginfi
+Lending (58), Agni Finance (92) and Estate Protocol (108) — each moved by one factor
+alone: the first four by a small growth move with maturity at exactly 1, the last by
+maturity alone. A share of 1.000 does not mean a big single leg; it can mean the other
+legs are exactly flat, so the share flags concentration, not size. The most balanced
+rows are Nucleus (0.389, rank 170), b14g (0.407, rank 20), Zoo Finance (0.423, rank
+68), Veda (0.452, rank 3) and Theo Network thBill (0.456, rank 84). The top ten is
+steadier than the board as a whole: only 3 of its rows sit at 0.80 or above, so the
+head of the board is pulled by more than one leg while the tail leans on one. A farmer
+reading a single-factor rank should check the leg it stands on — a growth spike fades
+in a week, a chain count is a fact, and an old listing is a wait, not a promise.
+
+Reproduce it by rebuilding the board eight times from the sealed snapshot, once per
+changed constant — growth weight 0.35 and 0.65, base multiple 0.20 and 0.30, breadth
+per chain 0.02 and 0.06, maturity window 730 and 1460 days — and comparing the top
+ten, the board total and each row's rank against the baseline. The dominant-factor
+share itself is dominantFactorShare in lib/model.ts, and the dashboard shows it as
+the One factor column, in each row's detail view, and in the model panel.
