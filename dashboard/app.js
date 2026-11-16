@@ -29,6 +29,10 @@
     return Math.max(0, Math.round(days)) + 'd';
   }
   function fmtMult(n) { return n.toFixed(2) + 'x'; }
+  function fmtShare(v) {
+    if (v === null || v === undefined || !isFinite(v)) return 'n/a';
+    return Math.round(v * 100) + '%';
+  }
 
   // The model in one function: the page recomputes a row from the snapshot figures and checks the
   // number board.json carries, so the page's code and the board's data are visibly the same arithmetic.
@@ -193,6 +197,7 @@
       else if (key === 'growth') { av = a.change_7d === null ? -Infinity : a.change_7d; bv = b.change_7d === null ? -Infinity : b.change_7d; }
       else if (key === 'age') { av = a.age_days === null ? Infinity : a.age_days; bv = b.age_days === null ? Infinity : b.age_days; }
       else if (key === 'chains') { av = (a.chains || []).length; bv = (b.chains || []).length; }
+      else if (key === 'share') { av = a.dominant_factor_share === null ? -1 : a.dominant_factor_share; bv = b.dominant_factor_share === null ? -1 : b.dominant_factor_share; }
       else { av = a.implied_value_usd; bv = b.implied_value_usd; }
       if (av < bv) return -state.dir;
       if (av > bv) return state.dir;
@@ -316,6 +321,7 @@
           el('div', { class: 'bar', 'aria-hidden': 'true' }, el('i', { style: 'width:' + Math.max(3, Math.round((r.implied_value_usd / max) * 100)) + '%' })),
           el('span', { class: 'num', text: fmtUsd(r.implied_value_usd) })
         )),
+        el('td', { class: 'num', text: fmtShare(r.dominant_factor_share) }),
         el('td', null, el('span', { class: 'status', text: 'no token' }))
       );
       tbody.appendChild(tr);
@@ -334,6 +340,7 @@
             sortHeader('age', 'Age'),
             sortHeader('chains', 'Chains'),
             sortHeader('implied', 'Implied value'),
+            sortHeader('share', 'One factor'),
             el('th', { scope: 'col', text: 'Token' })
           )),
           tbody
@@ -374,6 +381,7 @@
     var worked = top
       ? top.name + ': ' + fmtUsd(top.tvl_usd) + ' x ' + m.base_multiple + ' x ' + fmtMult(top.growth_multiplier) + ' x ' + fmtMult(top.maturity_multiplier) + ' x ' + fmtMult(top.breadth_multiplier) + ' = ' + fmtUsd(top.implied_value_usd)
       : '';
+    var shareNote = 'One factor can carry a row: the dominant factor share is the largest single factor\'s part of the whole adjustment, on a log scale. Across this board the median share is ' + fmtShare(DATA.median_dominant_factor_share) + ', and ' + (DATA.single_factor_rows || 0) + ' rows sit at 80% or more, resting on a single leg, so check the underlying figure before trusting those ranks.';
     return el('section', { class: 'panel model' },
       el('h2', { text: 'How implied value is computed' }),
       el('p', { class: 'sub', text: 'Every row is scored by one function of the snapshot figures. No protocol name is special-cased, and no row is hand-picked.' }),
@@ -393,6 +401,7 @@
         el('div', null, el('dt', { text: 'Breadth per chain' }), el('dd', { text: '+' + m.breadth_per_chain + ' (max ' + m.breadth_max_extra + ' extra)' }))
       ),
       el('p', { class: 'note', text: 'Worked example, the top row: ' + worked + '.' }),
+      el('p', { class: 'note', text: shareNote }),
       el('p', { class: 'note', text: 'TVL and seven-day growth come from the snapshot. Age is the time since the protocol was first listed, the best record of how long it has run with no token. Chains is how many chains its TVL sits on: a wider footprint is a wider launch. The early radar is every rankable protocol below the watchlist floor, and the live-token protocols are set aside with their market caps shown.' })
     );
   }
@@ -434,6 +443,7 @@
         el('div', null, el('span', { text: 'Growth multiplier' }), el('b', { class: 'num', text: fmtMult(row.growth_multiplier) })),
         el('div', null, el('span', { text: 'Maturity multiplier' }), el('b', { class: 'num', text: fmtMult(row.maturity_multiplier) })),
         el('div', null, el('span', { text: 'Breadth multiplier' }), el('b', { class: 'num', text: fmtMult(row.breadth_multiplier) })),
+        el('div', null, el('span', { text: 'Dominant factor share' }), el('b', { class: 'num', text: fmtShare(row.dominant_factor_share) })),
         el('div', { class: 'total' }, el('span', { text: 'Implied value' }), el('b', { class: 'num', text: fmtUsd(row.implied_value_usd) }))
       ),
       el('p', { class: 'check-line' }, 'Model ', el('b', { text: DATA.model_version }), ': the page recomputes this row as ', el('b', { text: fmtUsd(recomputed) }), recomputed === row.implied_value_usd ? ', the same number the board carries.' : ', which differs from the board: the data would be stale.', ' This is an estimate, not a price.')
