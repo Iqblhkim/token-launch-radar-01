@@ -43,6 +43,65 @@ Authorship: `main.ts`, `lib/model.ts` and all three `dashboard/` files were **wr
 3. Bundle this session (and its parent session if it worked on the entry) with the kit CLI, `--muse-usage` for the Muse usage rows, then `node cli/makefun.mjs check --kit <kit> --repo <repo> --transcripts transcripts.tar.gz`.
 4. Submit: `node cli/makefun.mjs submit --competition token-radar-01 --repo-url https://github.com/Iqblhkim/token-launch-radar-01 --commit <sha> --title "Token Radar" --bundle transcripts.tar.gz --keypair <dedicated wallet keypair>`. Max 5 submissions/UTC day, 10 total; last before the deadline is final. **Do not claim any prize without the user's permission.**
 
+## v2 — judge-facing improvements (2026-11-18, "Pecut" round)
+
+The v1 entry scored, dev rank #3856/6235 — mid-pack. The bounty is judged pairwise by an
+AI judge on five criteria in order: (1) working radar, (2) value model from the snapshot's
+own figures, (3) farm plans with concrete costs and times, (4) sortable/filterable page,
+(5) looks made. The judge reads only the three screenshots and the dashboard's source text
+from the dossier — never main.ts, lib/model.ts or these notes. So v2 spends its effort
+exactly where the judge looks:
+
+1. **The model is now visible in the first screenshot.** A model strip sits under the lede:
+   the formula plus the top row worked out (`Steakhouse Financial: $2.75B x 0.25 x 0.99x x
+   0.80x x 1.20x = $652.4M`). In v1 the formula and worked example lived only in the model
+   panel below the fold — no screenshot showed them. The strip costs one visible board row.
+2. **The farm plan's checkpoint step now quotes the protocol's own numbers.** Step 5 was
+   identical text on all 178 rows ("if the TVL held, keep farming"); it now names the
+   unwind threshold: `if your points grew and the TVL held above $2.20B (80% of today's
+   $2.75B), keep farming`. Implemented identically in `lib/model.ts` (new `fmtMoney`, the
+   same rendering as the dashboard's `fmtUsd`) and `dashboard/app.js`, so the page's
+   regenerated plans match board.json exactly — verified for 8 sampled protocols by
+   `dev/shots.mjs`.
+3. **The detail drawer now fits in one viewport.** The model breakdown is a two-column grid
+   (8 figures in 4 rows), the drawer is 640px wide, spacing tightened. In v1 the drawer
+   showed farm steps 1–4 and cut step 7 off; v2 shows the model, all 7 steps and the
+   estimated-cost line with nothing below the fold (verified by viewing 2-detail.png).
+4. **Rigor notes the judge can read.** The model panel now states the missing-data fallbacks
+   (unreported 7-day growth counts as 0; missing listing date counts as 365 days), and the
+   board caption defines the "One factor" column. Only 2 board rows lack growth and 6 lack a
+   listing date, so the fallbacks touch almost nobody — but stating them is the honest part.
+
+What v2 deliberately did NOT change: the radar-2 scoring formula (the sensitivity analysis
+above shows the head is stable under every constant perturbation tried; no principled
+improvement was available that a judge could verify), the board's 178 rows and ranks
+(identical to v1 — only step-5 text changed), and the 40/40 watchlist coverage. Dashboard
+source grew 42,859 → 46,554 bytes, still well under the 65,536-byte dossier cap, so the
+judge still reads every line. Dossier 827,202 bytes (< 1.5 MiB).
+
+Verification (all local, kit snapshot): `node dev/verify.mjs out` — 18/18 PASS;
+`node dev/shots.mjs` — ALL PASS, no console/page errors, 8 detail views' steps match
+board.json exactly; determinism re-checked — two fresh runs byte-identical (`diff -r`
+clean). Screenshots viewed: 1-board (model strip visible), 2-detail (model + 7 steps +
+cost line, all in frame), 3-filtered (Lending, 14 rows).
+
+## What the parent still does (repo + bundle + submit)
+
+1. Push to the public GitHub repo `Iqblhkim/token-launch-radar-01` on top of v1 commit
+   `8da8a59` (files changed in v2: `lib/model.ts`, `dashboard/app.js`,
+   `dashboard/app.css`, `screenshots/*.png`, `BUILD_NOTES.md`); `.makefun/owner.json`
+   unchanged; set GitHub About: website `https://make.fun/bounty/token-radar-01`, topic
+   `makefun`.
+2. Bundle THIS build's sessions only with the kit CLI (v1 explicit-bundle pattern — never
+   bundle discovered sessions from other work), then `node cli/makefun.mjs check --kit
+   <kit> --repo <repo> --transcripts transcripts.tar.gz`.
+3. Submit: `node cli/makefun.mjs submit --competition token-radar-01 --repo-url
+   https://github.com/Iqblhkim/token-launch-radar-01 --commit <sha> --title "Token Radar
+   v2" --bundle transcripts.tar.gz --keypair <dedicated wallet keypair>`. Entries close
+   14 Dec 2026 10:00 UTC; result due 28 Dec 2026 22:10 UTC. Max 5 submissions/UTC day,
+   10 total; last before the deadline is final (Force_Last). **Do not claim any prize
+   without the user's permission.**
+
 ## Sensitivity and single-factor read
 
 The board's head is steady while its middle moves. Rebuilding the board eight times,
