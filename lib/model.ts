@@ -350,6 +350,16 @@ function chainOf(p: SnapshotProtocol): string {
   return p.chains.length > 0 ? p.chains[0]! : 'its main chain';
 }
 
+/** Compact money, the same rendering the dashboard's fmtUsd uses, so board.json and the page agree. */
+const usd0 = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+export function fmtMoney(n: number): string {
+  if (!Number.isFinite(n)) return 'n/a';
+  if (Math.abs(n) >= 1e9) return `$${(n / 1e9).toFixed(2)}B`;
+  if (Math.abs(n) >= 1e6) return `$${(n / 1e6).toFixed(1)}M`;
+  if (Math.abs(n) >= 1e3) return `$${Math.round(n / 1e3)}K`;
+  return usd0.format(n);
+}
+
 /** How much capital one farm position needs, from the protocol's own TVL. */
 export function capitalFor(p: SnapshotProtocol): number {
   if (p.tvl_usd >= 5_000_000_000) return 250;
@@ -450,7 +460,7 @@ export function farmSteps(p: SnapshotProtocol, age: number | null): FarmStep[] {
       time: `${hold} days`,
     },
     {
-      text: `After 30 days, open the protocol's own points or rewards page and check its TVL: if your points grew and the TVL held, keep farming; if either went quiet, unwind the position.`,
+      text: `After 30 days, open the protocol's own points or rewards page and check its TVL: if your points grew and the TVL held above ${fmtMoney(p.tvl_usd * 0.8)} (80% of today's ${fmtMoney(p.tvl_usd)}), keep farming; if either went quiet, unwind the position.`,
       cost: 'nothing to check',
       time: '10 minutes',
     },
