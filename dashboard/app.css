@@ -62,9 +62,21 @@ a { color: var(--accent); }
 .top-meta span { white-space: nowrap; }
 .top-meta b { color: var(--ink); font-weight: 600; }
 
-.lede { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr); gap: var(--step-6); padding: var(--step-6) 0 var(--step-5); }
+.lede { padding: var(--step-6) 0 var(--step-5); }
+.lede-grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr); gap: var(--step-6); }
 .lede p { color: var(--muted); max-width: 62ch; margin-top: var(--step-2); }
 .lede p b { color: var(--ink); font-weight: 600; }
+/* The model, where the board screenshot can see it: one line of formula plus the
+   top row worked out, so the first screenshot carries the model, not just the ranks. */
+.model-strip {
+  margin-top: var(--step-4); display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--step-2) var(--step-4);
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-panel); padding: var(--step-3) var(--step-4);
+  font-size: 13px;
+}
+.ms-label { font-family: var(--font-num); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); white-space: nowrap; }
+.ms-formula { font-family: var(--font-num); color: var(--muted); }
+.ms-formula b { color: var(--accent); font-weight: 600; }
+.ms-worked { color: var(--ink); font-family: var(--font-num); }
 .facts { display: grid; gap: var(--step-2); align-content: start; border-left: 1px solid var(--border); padding-left: var(--step-5); }
 .fact { display: flex; align-items: baseline; justify-content: space-between; gap: var(--step-3); }
 .fact b { font-family: var(--font-num); font-size: 15px; font-weight: 500; }
@@ -136,8 +148,8 @@ tbody tr[data-selected="true"] { background: #1a2b22; }
 .button.primary { background: var(--accent); border-color: var(--accent); color: #08130d; font-weight: 600; }
 
 .detail {
-  position: fixed; top: 0; right: 0; bottom: 0; width: min(560px, 94vw); z-index: 10;
-  background: var(--surface); border-left: 1px solid var(--border); padding: var(--step-5);
+  position: fixed; top: 0; right: 0; bottom: 0; width: min(640px, 94vw); z-index: 10;
+  background: var(--surface); border-left: 1px solid var(--border); padding: 14px var(--step-5);
   overflow-y: auto; color: var(--ink);
 }
 .detail[hidden] { display: none; }
@@ -149,14 +161,16 @@ tbody tr[data-selected="true"] { background: #1a2b22; }
 .close { flex: none; min-width: 32px; min-height: 32px; padding: 0 var(--step-2); white-space: nowrap; border: 1px solid var(--border); border-radius: var(--radius-control); background: var(--surface-2); color: var(--ink); }
 .detail h2 { margin-top: var(--step-1); }
 .detail .sub { margin-top: var(--step-1); }
-.detail-section { margin-top: var(--step-5); padding-top: var(--step-4); border-top: 1px solid var(--border); }
+.detail-section { margin-top: var(--step-3); padding-top: 10px; border-top: 1px solid var(--border); }
 .detail-section h3 { margin-bottom: var(--step-2); }
-.equation { display: grid; gap: var(--step-2); font-family: var(--font-num); font-size: 13px; }
+/* Two columns, so the model's eight figures take four rows instead of eight: the whole
+   drawer — model and all seven farm steps — fits one viewport, nothing below the fold. */
+.equation { display: grid; grid-template-columns: 1fr 1fr; column-gap: var(--step-4); row-gap: 6px; font-family: var(--font-num); font-size: 13px; }
 .equation div { display: flex; justify-content: space-between; gap: var(--step-3); }
 .equation span { color: var(--muted); }
-.equation .total { border-top: 1px solid var(--border); padding-top: var(--step-2); }
+.equation .total { grid-column: 1 / -1; border-top: 1px solid var(--border); padding-top: 6px; }
 .equation .total b { color: var(--accent); }
-.steps { margin: 0; padding-left: var(--step-5); display: grid; gap: var(--step-3); }
+.steps { margin: 0; padding-left: var(--step-5); display: grid; gap: var(--step-2); font-size: 14px; line-height: 1.45; }
 .steps li { padding-left: var(--step-1); }
 .steps li::marker { color: var(--accent); font-family: var(--font-num); }
 .steps b { display: block; font-weight: 500; }
@@ -168,7 +182,7 @@ tbody tr[data-selected="true"] { background: #1a2b22; }
 
 @media (max-width: 900px) {
   .shell { padding: var(--step-4); }
-  .lede { grid-template-columns: 1fr; gap: var(--step-4); }
+  .lede-grid { grid-template-columns: 1fr; gap: var(--step-4); }
   .facts { border-left: 0; border-top: 1px solid var(--border); padding-left: 0; padding-top: var(--step-4); }
   .field input { min-width: 0; width: 100%; }
   .bar { width: 72px; }

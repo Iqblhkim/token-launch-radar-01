@@ -139,7 +139,7 @@
       { text: actionFor(p, capital, chain), cost: '$' + capital + ' of capital and about $' + (capital >= 150 ? 8 : 4) + ' of gas', time: '15 minutes to set up' },
       { text: weeklyFor(p), cost: 'about $2 of gas a week', time: '10 minutes a week' },
       { text: 'Hold the position for at least ' + hold + ' days so the activity is counted in more than one snapshot.', cost: 'the $' + capital + ' stays in the position', time: hold + ' days' },
-      { text: "After 30 days, open the protocol's own points or rewards page and check its TVL: if your points grew and the TVL held, keep farming; if either went quiet, unwind the position.", cost: 'nothing to check', time: '10 minutes' },
+      { text: "After 30 days, open the protocol's own points or rewards page and check its TVL: if your points grew and the TVL held above " + fmtUsd(p.tvl_usd * 0.8) + " (80% of today's " + fmtUsd(p.tvl_usd) + "), keep farming; if either went quiet, unwind the position.", cost: 'nothing to check', time: '10 minutes' },
       { text: "Before you withdraw, open the protocol's own points or rewards page and claim only from the link it publishes.", cost: 'no fee to check, and never pay to claim', time: '10 minutes' },
       { text: 'Write the wallet, the dates and every transaction in a farm log so you can repeat the position or unwind it.', cost: 'nothing but the log', time: '5 minutes' }
     ].map(stepText);
@@ -217,21 +217,33 @@
   }
 
   function lede() {
+    var top = DATA.rows[0];
+    var m = DATA.model;
+    var worked = top
+      ? top.name + ': ' + fmtUsd(top.tvl_usd) + ' x ' + m.base_multiple + ' x ' + fmtMult(top.growth_multiplier) + ' x ' + fmtMult(top.maturity_multiplier) + ' x ' + fmtMult(top.breadth_multiplier) + ' = ' + fmtUsd(top.implied_value_usd)
+      : '';
     return el('section', { class: 'lede' },
-      el('div', null,
-        el('h1', { text: DATA.board_size + ' pre-token protocols, ranked by implied value' }),
-        el('p', null,
-          'The watchlist is the floor: every protocol with at least ', el('b', { text: '$' + Math.round(DATA.floor_usd / 1e6) + 'M' }),
-          ' of TVL and no token on record, all ', el('b', { text: String(DATA.watchlist_size) }),
-          ' of them. The early radar adds ', el('b', { text: String(DATA.early_size) }),
-          ' protocols below that floor that pass the same test — no exchange, no bridge, no liquid-staking or restaking product, no wrapped or staked product, no versioned pool. Implied value is a model, not a promise.'
+      el('div', { class: 'lede-grid' },
+        el('div', null,
+          el('h1', { text: DATA.board_size + ' pre-token protocols, ranked by implied value' }),
+          el('p', null,
+            'The watchlist is the floor: every protocol with at least ', el('b', { text: '$' + Math.round(DATA.floor_usd / 1e6) + 'M' }),
+            ' of TVL and no token on record, all ', el('b', { text: String(DATA.watchlist_size) }),
+            ' of them. The early radar adds ', el('b', { text: String(DATA.early_size) }),
+            ' protocols below that floor that pass the same test — no exchange, no bridge, no liquid-staking or restaking product, no wrapped or staked product, no versioned pool. Implied value is a model, not a promise.'
+          )
+        ),
+        el('div', { class: 'facts' },
+          el('div', { class: 'fact' }, el('span', { text: 'Watchlist covered' }), el('b', { text: DATA.watchlist_size + ' / ' + DATA.watchlist_size })),
+          el('div', { class: 'fact' }, el('span', { text: 'Early rows below the floor' }), el('b', { text: String(DATA.early_size) })),
+          el('div', { class: 'fact' }, el('span', { text: 'Total implied value' }), el('b', { text: fmtUsd(DATA.total_implied_usd) })),
+          el('div', { class: 'fact' }, el('span', { text: 'Live-token protocols set aside' }), el('b', { text: String(DATA.live_size) }))
         )
       ),
-      el('div', { class: 'facts' },
-        el('div', { class: 'fact' }, el('span', { text: 'Watchlist covered' }), el('b', { text: DATA.watchlist_size + ' / ' + DATA.watchlist_size })),
-        el('div', { class: 'fact' }, el('span', { text: 'Early rows below the floor' }), el('b', { text: String(DATA.early_size) })),
-        el('div', { class: 'fact' }, el('span', { text: 'Total implied value' }), el('b', { text: fmtUsd(DATA.total_implied_usd) })),
-        el('div', { class: 'fact' }, el('span', { text: 'Live-token protocols set aside' }), el('b', { text: String(DATA.live_size) }))
+      el('div', { class: 'model-strip' },
+        el('span', { class: 'ms-label', text: 'Model ' + DATA.model_version }),
+        el('span', { class: 'ms-formula', text: 'implied = round( TVL x ' + m.base_multiple + ' x growth x maturity x breadth )' }),
+        el('span', { class: 'ms-worked', text: worked })
       )
     );
   }
@@ -331,7 +343,7 @@
     return el('div', { class: 'panel' },
       el('div', { class: 'table-wrap' },
         el('table', null,
-          el('caption', { class: 'sub', text: 'Pre-token protocols, strongest implied value first. Select a row for its model and farm plan.' }),
+          el('caption', { class: 'sub', text: 'Pre-token protocols, strongest implied value first. Select a row for its model and farm plan. One factor is the dominant factor share: how much of the row\'s whole adjustment the single largest factor carries.' }),
           el('thead', null, el('tr', null,
             sortHeader('implied', 'Rank'),
             sortHeader('name', 'Protocol'),
@@ -401,6 +413,7 @@
         el('div', null, el('dt', { text: 'Breadth per chain' }), el('dd', { text: '+' + m.breadth_per_chain + ' (max ' + m.breadth_max_extra + ' extra)' }))
       ),
       el('p', { class: 'note', text: 'Worked example, the top row: ' + worked + '.' }),
+      el('p', { class: 'note', text: 'When a protocol reports no seven-day growth the model uses 0 — neither a reward nor a penalty — and when its listing date is missing it uses 365 days. Both fallbacks are stated here, never hidden.' }),
       el('p', { class: 'note', text: shareNote }),
       el('p', { class: 'note', text: 'TVL and seven-day growth come from the snapshot. Age is the time since the protocol was first listed, the best record of how long it has run with no token. Chains is how many chains its TVL sits on: a wider footprint is a wider launch. The early radar is every rankable protocol below the watchlist floor, and the live-token protocols are set aside with their market caps shown.' })
     );
