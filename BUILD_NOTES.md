@@ -85,19 +85,65 @@ board.json exactly; determinism re-checked — two fresh runs byte-identical (`d
 clean). Screenshots viewed: 1-board (model strip visible), 2-detail (model + 7 steps +
 cost line, all in frame), 3-filtered (Lending, 14 rows).
 
+## v3 — the worked example reproduces (2026-11-18, "Pecut" round)
+
+Fresh-eyes review of exactly what the judge reads (3 screenshots + dashboard source)
+found one real, verifiable gap in v2, on criterion 2 (value model from the snapshot's
+own figures): **the worked example's own displayed figures did not multiply to the
+implied value they stated.** The v2 strip read
+`Steakhouse Financial: $2.75B x 0.25 x 0.99x x 0.80x x 1.20x = $652.4M` — but
+$2.75B x 0.25 x 0.99 x 0.80 x 1.20 = **$653.4M**, a full $1.0M away from the claimed
+$652.4M. The rounding of every input compounded upward, so a judge who checked the
+model's headline example against its own numbers would find it does not reproduce.
+The detail drawer had the same defect (TVL $2.75B, multipliers 0.99x / 0.80x, implied
+$652.4M), and its inputs were not even derivable: age shown as "1.5y" cannot give the
+0.80x maturity multiplier (which comes from 543 days), and growth shown as "-2.19%"
+cannot give 0.9890x (which comes from -2.1935%).
+
+v3 shows the worked example at the precision that reproduces it, in the model strip,
+the model panel and the detail drawer:
+
+- TVL to the cent in millions (`$2,753.98M`), growth and maturity multipliers to four
+  decimals (`0.9890x`, `0.7984x`); breadth stays two decimals (always an exact
+  multiple of 0.04). The strip now reads
+  `Steakhouse Financial: $2,753.98M x 0.25 x 0.9890x x 0.7984x x 1.20x = $652.4M`,
+  and those figures multiply to $652.38M — $652.4M at the displayed precision.
+- The drawer shows the exact inputs each multiplier comes from: seven-day growth to
+  four decimals (`-2.1935%`) and age in exact days (`543d`), so every multiplier in
+  the drawer is derivable from the figure beside it.
+
+What v3 deliberately did NOT change: the radar-2 formula, the board's 178 rows and
+ranks (board.json byte-identical to the v2 build — verified by diff), the farm plans,
+and the watchlist. Only `dashboard/app.js` (formatting) and `dev/shots.mjs` (new
+checks) changed, plus regenerated screenshots and these notes. Dashboard source
+46,554 → 47,516 bytes, still well under the 65,536-byte dossier cap. Dossier
+838,165 bytes (< 1.5 MiB).
+
+Verification (all local, kit snapshot): `node dev/verify.mjs out` — 18/18 PASS;
+`node dev/shots.mjs` — ALL PASS, no console/page errors, including the new
+reproducibility checks: the strip's figures multiply to $652.38M vs $652.4M claimed,
+and for all 8 sampled detail views (Steakhouse, Gauntlet, Curvance, Bittensor dTAO,
+OnRe, Tori Finance, vfat.io, Monarq) the drawer's figures multiply to within $14,027
+of the claimed implied value (tolerance $50,000 — an order of magnitude below v2's
+$1.0M gap) and each multiplier follows from its shown input. The same check run
+against v2's strip figures FAILS ($653.4M vs $652.4M), so the check discriminates.
+Determinism re-checked — two fresh runs byte-identical (`diff -r` clean), and
+`out/` matches them. Screenshots viewed: 1-board (strip fits one line), 2-detail
+(drawer still fits one viewport).
+
 ## What the parent still does (repo + bundle + submit)
 
-1. Push to the public GitHub repo `Iqblhkim/token-launch-radar-01` on top of v1 commit
-   `8da8a59` (files changed in v2: `lib/model.ts`, `dashboard/app.js`,
-   `dashboard/app.css`, `screenshots/*.png`, `BUILD_NOTES.md`); `.makefun/owner.json`
-   unchanged; set GitHub About: website `https://make.fun/bounty/token-radar-01`, topic
-   `makefun`.
-2. Bundle THIS build's sessions only with the kit CLI (v1 explicit-bundle pattern — never
-   bundle discovered sessions from other work), then `node cli/makefun.mjs check --kit
+1. Push to the public GitHub repo `Iqblhkim/token-launch-radar-01` on top of v2 commit
+   `5b4465d` (files changed in v3: `dashboard/app.js`, `dev/shots.mjs`,
+   `screenshots/*.png`, `BUILD_NOTES.md`); `.makefun/owner.json` unchanged; GitHub About
+   already set (website `https://make.fun/bounty/token-radar-01`, topic `makefun`).
+2. Bundle THIS build's sessions PLUS the v1+v2 build sessions with the kit CLI (an
+   improvement-round bundle MUST include the original build sessions, or
+   thinking_reproduces collapses below 30%), then `node cli/makefun.mjs check --kit
    <kit> --repo <repo> --transcripts transcripts.tar.gz`.
 3. Submit: `node cli/makefun.mjs submit --competition token-radar-01 --repo-url
    https://github.com/Iqblhkim/token-launch-radar-01 --commit <sha> --title "Token Radar
-   v2" --bundle transcripts.tar.gz --keypair <dedicated wallet keypair>`. Entries close
+   v3" --bundle transcripts.tar.gz --keypair <dedicated wallet keypair>`. Entries close
    14 Dec 2026 10:00 UTC; result due 28 Dec 2026 22:10 UTC. Max 5 submissions/UTC day,
    10 total; last before the deadline is final (Force_Last). **Do not claim any prize
    without the user's permission.**
