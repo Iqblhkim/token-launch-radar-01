@@ -29,6 +29,25 @@
     return Math.max(0, Math.round(days)) + 'd';
   }
   function fmtMult(n) { return n.toFixed(2) + 'x'; }
+  // The worked example's figures must multiply back to the implied value they state:
+  // four decimals on the multipliers and three on a billion-scale TVL, so the strip's
+  // own arithmetic reproduces its result instead of landing a million dollars away.
+  function fmtMult4(n) { return n.toFixed(4) + 'x'; }
+  function fmtTvlExact(n) {
+    if (n === null || n === undefined || !isFinite(n)) return 'n/a';
+    if (Math.abs(n) >= 1e6) return '$' + (n / 1e6).toFixed(2) + 'M';
+    return fmtUsd(n);
+  }
+  function fmtPct4(n) {
+    if (n === null || n === undefined || !isFinite(n)) return 'n/a';
+    return (n > 0 ? '+' : '') + n.toFixed(4) + '%';
+  }
+  // Exact days, not rounded years: the maturity multiplier is derived from the day
+  // count, so the drawer must show the count the multiplier came from.
+  function fmtAgeDays(days) {
+    if (days === null || days === undefined) return 'unknown';
+    return Math.max(0, Math.round(days)) + 'd';
+  }
   function fmtShare(v) {
     if (v === null || v === undefined || !isFinite(v)) return 'n/a';
     return Math.round(v * 100) + '%';
@@ -220,7 +239,7 @@
     var top = DATA.rows[0];
     var m = DATA.model;
     var worked = top
-      ? top.name + ': ' + fmtUsd(top.tvl_usd) + ' x ' + m.base_multiple + ' x ' + fmtMult(top.growth_multiplier) + ' x ' + fmtMult(top.maturity_multiplier) + ' x ' + fmtMult(top.breadth_multiplier) + ' = ' + fmtUsd(top.implied_value_usd)
+      ? top.name + ': ' + fmtTvlExact(top.tvl_usd) + ' x ' + m.base_multiple + ' x ' + fmtMult4(top.growth_multiplier) + ' x ' + fmtMult4(top.maturity_multiplier) + ' x ' + fmtMult(top.breadth_multiplier) + ' = ' + fmtUsd(top.implied_value_usd)
       : '';
     return el('section', { class: 'lede' },
       el('div', { class: 'lede-grid' },
@@ -391,7 +410,7 @@
     var m = DATA.model;
     var top = DATA.rows[0];
     var worked = top
-      ? top.name + ': ' + fmtUsd(top.tvl_usd) + ' x ' + m.base_multiple + ' x ' + fmtMult(top.growth_multiplier) + ' x ' + fmtMult(top.maturity_multiplier) + ' x ' + fmtMult(top.breadth_multiplier) + ' = ' + fmtUsd(top.implied_value_usd)
+      ? top.name + ': ' + fmtTvlExact(top.tvl_usd) + ' x ' + m.base_multiple + ' x ' + fmtMult4(top.growth_multiplier) + ' x ' + fmtMult4(top.maturity_multiplier) + ' x ' + fmtMult(top.breadth_multiplier) + ' = ' + fmtUsd(top.implied_value_usd)
       : '';
     var shareNote = 'One factor can carry a row: the dominant factor share is the largest single factor\'s part of the whole adjustment, on a log scale. Across this board the median share is ' + fmtShare(DATA.median_dominant_factor_share) + ', and ' + (DATA.single_factor_rows || 0) + ' rows sit at 80% or more, resting on a single leg, so check the underlying figure before trusting those ranks.';
     return el('section', { class: 'panel model' },
@@ -449,12 +468,12 @@
     dialog.appendChild(el('section', { class: 'detail-section' },
       el('h3', { text: 'Implied value' }),
       el('div', { class: 'equation' },
-        el('div', null, el('span', { text: 'TVL' }), el('b', { class: 'num', text: fmtUsd(row.tvl_usd) })),
-        el('div', null, el('span', { text: 'Seven-day growth' }), el('b', { class: 'num', text: fmtPct(row.change_7d) })),
-        el('div', null, el('span', { text: 'Age with no token' }), el('b', { class: 'num', text: fmtAge(row.age_days) })),
+        el('div', null, el('span', { text: 'TVL' }), el('b', { class: 'num', text: fmtTvlExact(row.tvl_usd) })),
+        el('div', null, el('span', { text: 'Seven-day growth' }), el('b', { class: 'num', text: fmtPct4(row.change_7d) })),
+        el('div', null, el('span', { text: 'Age with no token' }), el('b', { class: 'num', text: fmtAgeDays(row.age_days) })),
         el('div', null, el('span', { text: 'Chains' }), el('b', { class: 'num', text: String((row.chains || []).length) })),
-        el('div', null, el('span', { text: 'Growth multiplier' }), el('b', { class: 'num', text: fmtMult(row.growth_multiplier) })),
-        el('div', null, el('span', { text: 'Maturity multiplier' }), el('b', { class: 'num', text: fmtMult(row.maturity_multiplier) })),
+        el('div', null, el('span', { text: 'Growth multiplier' }), el('b', { class: 'num', text: fmtMult4(row.growth_multiplier) })),
+        el('div', null, el('span', { text: 'Maturity multiplier' }), el('b', { class: 'num', text: fmtMult4(row.maturity_multiplier) })),
         el('div', null, el('span', { text: 'Breadth multiplier' }), el('b', { class: 'num', text: fmtMult(row.breadth_multiplier) })),
         el('div', null, el('span', { text: 'Dominant factor share' }), el('b', { class: 'num', text: fmtShare(row.dominant_factor_share) })),
         el('div', { class: 'total' }, el('span', { text: 'Implied value' }), el('b', { class: 'num', text: fmtUsd(row.implied_value_usd) }))
